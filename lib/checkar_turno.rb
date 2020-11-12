@@ -1,11 +1,19 @@
 require 'watir'
 require 'net_http_ssl_fix'
+require 'pushover'
 require_relative './checkar_turno/credentials.rb'
 
+TRAMITE_SANTAFE_UNIONES_CONVIVENCIALES = '233'
+TRAMITE_SANTAFE_DNI = '159'
+LOCALIDAD_ROSARIO = '295'
+#OFICINAS_ROSARIO = ['352','3', '441']
+OFICINAS_ROSARIO = ['441']
 CHROMEDRIVER_PATH = './ext/chromedriver.exe'.freeze
 PLAYER_PATH = './ext/cmdmp3win.exe'.freeze
 MP3_PATH_OK = './assets/inputok.mp3'.freeze
-URL_LOGIN = 'https://id.argentina.gob.ar/ingresar'.freeze
+URL_MI_ARGENTINA_LOGIN = 'https://id.argentina.gob.ar/ingresar'.freeze
+URL_MI_ARGENTINA_TURNOS = 'https://mi.argentina.gob.ar/turnos/seleccion-turno/793'
+URL_SANTAFE_TURNOS = 'http://turnos.santafe.gov.ar/turnos/web/frontend.php'
 DEBUG = true
 INTERVAL = 60 #seconds
 
@@ -26,11 +34,12 @@ class CheckTurn
 
     while turn_not_available  # infinite loop until turno available
       puts "intento: #{count += 1}"
-      if santafe_turn_explorer || miargentina_turn_explorer
-        play_sound
-        turn_not_available = false
+      if santafe_turn_explorer #|| miargentina_turn_explorer
+        send_push_notification
+        20.times { play_sound }
+        turn_not_available = false        
         puts 'Encontramos turno!'
-        exit
+        sleep 200000
       end
       sleep rand(INTERVAL..INTERVAL*2)
     end
@@ -40,7 +49,7 @@ class CheckTurn
     begin
       start_webdriver
       if login_miargentina
-        @browser.goto('https://mi.argentina.gob.ar/turnos/seleccion-turno/793')
+        @browser.goto(URL_MI_ARGENTINA_TURNOS)
         @browser.radio(value: '2', name: 'forWhomIsIt').set
         sleep 1
         @browser.radio(value: '1', name: 'howMeny').set
@@ -65,10 +74,10 @@ class CheckTurn
   def santafe_turn_explorer
     begin
       start_webdriver
-      ['352','3'].each do |office_number|
-        @browser.goto('http://turnos.santafe.gov.ar/turnos/web/frontend.php')
-        @browser.select_list(name: 'tramite').select('159')
-        @browser.select_list(name: 'localidad').select('295')
+      OFICINAS_ROSARIO.each do |office_number|
+        @browser.goto(URL_SANTAFE_TURNOS)
+        @browser.select_list(name: 'tramite').select(TRAMITE_SANTAFE_UNIONES_CONVIVENCIALES)
+        @browser.select_list(name: 'localidad').select(LOCALIDAD_ROSARIO)
         @browser.select_list(name: 'oficina').select(office_number)
         @browser.button(name: 'SolicitarTurno').click
         sleep 1
@@ -79,7 +88,7 @@ class CheckTurn
       @browser.close
       return false
     rescue StandardError => e
-      puts "error navingating site: #{e} "
+      puts "error navingating site: #{e}"
     end
   end
 
@@ -127,7 +136,10 @@ class CheckTurn
 
     @browser
   end
+
+  def send_push_notification
+    Pushover::Message.new(token: PUSHOVER_API_KEY, user: PUSHOVER_USER_KEY, message: URL_SANTAFE_TURNOS).push    
+  end
 end
 
 CheckTurn.new.run
-
