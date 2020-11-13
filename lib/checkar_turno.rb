@@ -11,11 +11,11 @@ OFICINAS_ROSARIO = ['441']
 CHROMEDRIVER_PATH = './ext/chromedriver.exe'.freeze
 PLAYER_PATH = './ext/cmdmp3win.exe'.freeze
 MP3_PATH_OK = './assets/inputok.mp3'.freeze
-URL_MI_ARGENTINA_LOGIN = 'https://id.argentina.gob.ar/ingresar'.freeze
-URL_MI_ARGENTINA_TURNOS = 'https://mi.argentina.gob.ar/turnos/seleccion-turno/793'
-URL_SANTAFE_TURNOS = 'http://turnos.santafe.gov.ar/turnos/web/frontend.php'
+URL_MIARGENTINA_LOGIN = 'https://id.argentina.gob.ar/ingresar'.freeze
+URL_MIARGENTINA_TURNOS = 'https://mi.argentina.gob.ar/turnos/seleccion-turno/768'.freeze
+URL_SANTAFE_TURNOS = 'http://turnos.santafe.gov.ar/turnos/web/frontend.php'.freeze
 DEBUG = true
-INTERVAL = 60 #seconds
+INTERVAL = 120 #seconds
 
 class CheckTurn
   def initialize
@@ -34,10 +34,10 @@ class CheckTurn
 
     while turn_not_available  # infinite loop until turno available
       puts "intento: #{count += 1}"
-      if santafe_turn_explorer #|| miargentina_turn_explorer
+      if santafe_turn_explorer || miargentina_turn_explorer
         send_push_notification
         20.times { play_sound }
-        turn_not_available = false        
+        turn_not_available = false
         puts 'Encontramos turno!'
         sleep 200000
       end
@@ -49,11 +49,9 @@ class CheckTurn
     begin
       start_webdriver
       if login_miargentina
-        @browser.goto(URL_MI_ARGENTINA_TURNOS)
-        @browser.radio(value: '2', name: 'forWhomIsIt').set
-        sleep 1
-        @browser.radio(value: '1', name: 'howMeny').set
-        sleep 1 # sometimes the option doesn't change before clicking
+        @browser.goto(URL_MIARGENTINA_TURNOS)
+        @browser.radio(value: '1', name: 'forWhomIsIt').set
+        sleep 1        
         @browser.button(class: 'btn btn-success'.split(' ')).click
 
         return true if miargentina_condition
@@ -61,13 +59,16 @@ class CheckTurn
 
         @login = nil
       else
-        puts 'error login in'
+        puts 'error login in miargentina'
+        @browser.close
       end
       sleep 2
       @browser.close
       return false
     rescue StandardError => e
-      puts "error navingating site: #{e} "
+      puts "error navigating site: #{e} "
+      @login = nil
+      @browser.close
     end
   end
 
@@ -89,6 +90,8 @@ class CheckTurn
       return false
     rescue StandardError => e
       puts "error navingating site: #{e}"
+      @browser.close if @browser
+      return false
     end
   end
 
@@ -102,7 +105,7 @@ class CheckTurn
 
   def login_miargentina
     unless @login
-      @browser.goto(URL_LOGIN)
+      @browser.goto(URL_MIARGENTINA_LOGIN)
 
       @browser.text_field('id': 'cuil').set(@username)
       @browser.text_field('id': 'password_confirmacion').set(@password)
@@ -129,6 +132,7 @@ class CheckTurn
       o.add_argument('--headless') unless DEBUG
       o.add_argument('--disable-gpu')
       o.add_argument('--log-level=3')
+      o.add_argument("--window-size=1600,900")
     end
 
     @browser = Watir::Browser.new :chrome, options: options
