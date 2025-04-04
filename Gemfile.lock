@@ -20,11 +20,13 @@ GEM
       selenium-webdriver (~> 3.6)
 
 PLATFORMS
+  ruby
   x64-mingw32
+  x86-mingw32
 
 DEPENDENCIES
   net_http_ssl_fix (~> 0.0.10)
-  pushover
+  pushover (~> 3.0.3)
   watir (~> 6.17.0)
 
 BUNDLED WITH
