@@ -1,6 +1,6 @@
+require_relative '../webdriver_class'
 URL_MIARGENTINA_LOGIN = 'https://id.argentina.gob.ar/ingresar'.freeze
 URL_MIARGENTINA_TURNOS = 'https://mi.argentina.gob.ar/turnos/seleccion-turno/768'.freeze
-
 class MiArgentina
   def initialize
     @username = USERNAME

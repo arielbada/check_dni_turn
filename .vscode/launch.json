@@ -5,11 +5,32 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Local File",
-      "type": "Ruby",
+      "type": "rdbg",
+      "name": "Debug current file",
       "request": "launch",
-      "program": "${workspaceRoot}/lib/checkar_turno.rb",
-      "args": ["sede_electronica"]
+      "script": "${file}",
+      "askParameters": true
+    },
+    {
+      "name": "Debug Local File",
+      "type": "rdbg",
+      "request": "launch",
+      "script": "${workspaceRoot}/lib/checkar_turno.rb",
+      "useBundler": false,
+      "args": [
+        "sede_electronica"
+      ]
+    },
+    {
+      "type": "rdbg",
+      "name": "Attach with rdbg",
+      "request": "attach"
+    },
+    {
+      "name": "Test Pushover",
+      "type": "rdbg",
+      "request": "launch",
+      "script": "${workspaceRoot}/test/pushover.rb"
     }
   ]
 }

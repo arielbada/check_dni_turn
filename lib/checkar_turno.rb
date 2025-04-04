@@ -1,9 +1,9 @@
 require 'watir'
 require 'net_http_ssl_fix'
-require 'pushover'
+
 require_relative './checkar_turno/credentials.rb'
 require_relative './checkar_turno/administracion_publica_espana'
-CHROMEDRIVER_PATH = './ext/chromedriver.exe'.freeze
+require_relative './pushover_client.rb'
 PLAYER_PATH = './ext/cmdmp3win.exe'.freeze
 MP3_PATH_OK = './assets/inputok.mp3'.freeze
 
@@ -16,21 +16,17 @@ if ARGV.length != 1
 end
 
 class CheckTurn
-  def initialize
-    Selenium::WebDriver::Chrome::Service.driver_path = CHROMEDRIVER_PATH
-  end
 
   def run
     count = 0
     turn_not_available = true
-    play_sound
-    browser = start_webdriver
+    #play_sound    
 
     case ARGV[0]
     when 'mi_argentina'
-      sede = MiArgentina.new(browser)
+      sede = MiArgentina.new
     when 'sede_electronica'
-      sede = AdmistracionPublicaEspana.new(browser)
+      sede = AdmistracionPublicaEspana.new
     end
 
     while turn_not_available # infinite loop until turno available
@@ -55,30 +51,8 @@ class CheckTurn
     `#{PLAYER_PATH} #{MP3_PATH_OK}`
   end
 
-  def start_webdriver
-    options = Selenium::WebDriver::Chrome::Options.new.tap do |o|
-      o.add_option(:detach, true)
-      o.add_argument('--window-size=1920,1080')
-      o.add_argument('--no-sandbox')
-      o.add_argument('--disable-infobars')
-      o.add_argument('--disable-browser-side-navigation')
-      o.add_argument('--headless') unless DEBUG
-      o.add_argument('--disable-gpu')
-      o.add_argument('--log-level=3')
-    end
-
-    browser = Watir::Browser.new :chrome, options: options
-    browser.driver.manage.timeouts.page_load = 90
-
-    at_exit do
-      browser.close if browser
-    end
-
-    browser
-  end
-
   def send_push_notification(message)
-    Pushover::Message.new(token: PUSHOVER_API_KEY, user: PUSHOVER_USER_KEY, message: message).push
+    PushoverClient.new(PUSHOVER_API_KEY, PUSHOVER_USER_KEY).send_push_notification(message)
   end
 
   def timestamp
